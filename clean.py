@@ -268,7 +268,7 @@ def split_df(df):
 	df = pd.DataFrame(data)
 	return df
 
-def RedfinTable(df,df_no_download,state,loc,folder):
+def RedfinTable(df,df_no_download,state,loc):
 	"""
 	Funcion para generar
 	Redfin_Csv.csv
@@ -318,11 +318,11 @@ def RedfinTable(df,df_no_download,state,loc,folder):
 	#pt_df.to_csv('./insert_original_redfin/{}/input_data/Redfin_Csv_{}-{}_{}.csv'.format(folder,state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)
 	pt_df.to_csv('./send_fileRemote/input_file/Redfin_Csv_{}-{}_{}.csv'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)		
 
-	rename('files_csv','files_csv_{}-{}_{}'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))))
+	#rename('files_csv','files_csv_{}-{}_{}'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))))
 	print('Generated Redfin_CSV')
 
 def main():
-	script,state,loc,folder = argv
+	script,state,loc = argv
 	
 	if state == '0':
 		state = ''
@@ -368,13 +368,13 @@ def main():
 	
 	try:
 		df = pd.read_csv("./merge/downloaded.csv",dtype=str,keep_default_na=False)
-		RedfinTable(df,df_no_download,state,loc,folder)
+		RedfinTable(df,df_no_download,state,loc)
 	except:
 		print('Nothing to Do. downloaded.csv not found!!')
 		df_no_download.to_csv('Redfin_Csv_{}-{}_{}.csv'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)
 		#df_no_download.to_csv('./insert_original_redfin/{}/input_data/Redfin_Csv_{}-{}_{}.csv'.format(folder,state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)
 		df_no_download.to_csv('./send_fileRemote/input_file/Redfin_Csv_{}-{}_{}.csv'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)		
-		rename('files_csv','files_csv_{}-{}_{}'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))))
+		#rename('files_csv','files_csv_{}-{}_{}'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))))
 		print('Generated Redfin_CSV, with zip_no_downloaded.')
 	
 main()

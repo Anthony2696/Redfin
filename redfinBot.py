@@ -11,8 +11,6 @@ from funtions_bot import generate_link_redfin
 from funtions_bot import initChromeDriver
 from funtions_bot import extract_info_properties
 from funtions_bot import exec_cyberghost
-
-#from fake_useragent import  UserAgent
 import os
 import shutil
 import time
@@ -21,8 +19,12 @@ import pandas as pd
 import datetime
 import re
 
+script, state, location, filter_status, filter_sold, filter_timeRedfin,file = argv
+
 match_city_county = [False,False]
-df,_ = get_df('./input')
+
+df,part = get_df(file)
+
 list_scrape = pd.DataFrame(columns=[
     'zip_code',
     'state_name',
@@ -146,14 +148,13 @@ def errors_in_inputs(fstate,flocation,fstatus,fsold,ftimeredfin):
     return False
 
 if __name__ == "__main__":
-    script, state, location, filter_status, filter_sold, filter_timeRedfin = argv
-
-    print('\n**INPUTS**\n\tSTATE:',state,'\n\tLOCATION:',location,'\n\tFILTER_STATUS:',filter_status,'\n\tFILTER_SOLD',filter_sold,'\n\tFILTER_TIME_ON_REDFIN:',filter_timeRedfin,'\n')
     
-    folderExists = os.path.isdir("./files_csv")
+    print('\n**INPUTS**\n\tSTATE:',state,'\n\tLOCATION:',location,'\n\tFILTER_STATUS:',filter_status,'\n\tFILTER_SOLD',filter_sold,'\n\tFILTER_TIME_ON_REDFIN:',filter_timeRedfin,'\n')
+    part_name = part.replace('.csv','')
+    folderExists = os.path.isdir(f"./files_csv_{part_name}")
     if folderExists:
-        shutil.rmtree(f"{os.getcwd()}/files_csv")
-    os.mkdir("./files_csv")
+        shutil.rmtree(f"{os.getcwd()}/files_csv_{part_name}")
+    os.mkdir(f"./files_csv_{part_name}")
     c_state=0
     c_loc = 0
     attemps = 0
@@ -186,7 +187,7 @@ if __name__ == "__main__":
                 continue
 
             list_scrape = list_scrape.append({'zip_code':zip_code,'state_name':state_current,'city_name':city,'county_name':county},ignore_index=True)
-        list_scrape.to_csv('list.csv',index=False)
+        list_scrape.to_csv(f'list_{part}',index=False)
         
         if len(list_scrape) >0:
             print('STATES AND LOCATIONS FILTERS: ',list_scrape.shape[0])
@@ -309,8 +310,8 @@ if __name__ == "__main__":
                                 _,filename = get_df('./downloads')
 
                                 if filename != '':
-                                    shutil.move(f"{os.getcwd()}/downloads/{filename}",f"{os.getcwd()}/files_csv/results_{zip_code}_{indx}.csv")
-                                    df_zip_current = pd.read_csv(f'./files_csv/results_{zip_code}_{indx}.csv',dtype=str,keep_default_na=False)
+                                    shutil.move(f"{os.getcwd()}/downloads/{filename}",f"{os.getcwd()}/files_csv_{part_name}/results_{zip_code}_{indx}.csv")
+                                    df_zip_current = pd.read_csv(f'./files_csv_{part_name}/results_{zip_code}_{indx}.csv',dtype=str,keep_default_na=False)
 
                                     num_match_zip = df_zip_current.shape[0]
                                     try:
@@ -333,7 +334,7 @@ if __name__ == "__main__":
                                             'RESPONSE_LINK': response,
                                             "index":indx
                                         },ignore_index=True)
-                                    debug.to_csv(f'results_redfin{attemps}.csv',index=False)
+                                    debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
 
                                 else:
                                     #DEBUG
@@ -352,7 +353,7 @@ if __name__ == "__main__":
                                         'RESPONSE_LINK': response,
                                         "index":indx
                                     },ignore_index=True)
-                                    debug.to_csv(f'results_redfin{attemps}.csv',index=False)
+                                    debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
                                     
                             else:
                                 #DEBUG
@@ -369,7 +370,7 @@ if __name__ == "__main__":
                                             'RESPONSE_LINK': response,
                                             "index":indx
                                         },ignore_index=True)
-                                    debug.to_csv(f'results_redfin{attemps}.csv',index=False)
+                                    debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
                                 else:
                                     try:
                                         homes = int(homes)
@@ -395,8 +396,8 @@ if __name__ == "__main__":
                                                                     "DOLLAR SQUARE FEET":price_sqft,
                                                                     "URL":url
                                             },ignore_index=True)
-                                            debug.to_csv(f'results_redfin{attemps}.csv',index=False)
-                                            debug_zip_no_download.to_csv(f"zip_no_download{attemps}.csv",index=False)
+                                            debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                                            debug_zip_no_download.to_csv(f"zip_no_download{attemps}_{part}",index=False)
                                         else:
                                             debug = debug.append({
                                                     "zip_code":zip_code,
@@ -410,7 +411,7 @@ if __name__ == "__main__":
                                                     'RESPONSE_LINK': response,
                                                     "index":indx
                                                 },ignore_index=True)
-                                            debug.to_csv(f'results_redfin{attemps}.csv',index=False)
+                                            debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
                                     except:
                                         block1 = respObj.xpath('//form[@id="rf_unblock"]//div[@id="captcha"]').get()
                                         block2 = respObj.xpath('//div[@id="txt"]//p[2]//text()').get()
@@ -455,7 +456,7 @@ if __name__ == "__main__":
                                                     "index":indx
                                                 },ignore_index=True)
 
-                                        debug.to_csv(f'results_redfin{attemps}.csv',index=False)
+                                        debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
                             driver.quit()
                         except Exception as e:
                             print('***Error Execute***:',e)
@@ -471,7 +472,8 @@ if __name__ == "__main__":
                                     'RESPONSE_LINK': response,
                                     "index":indx
                                 },ignore_index=True)
-                            debug.to_csv(f'results_redfin{attemps}.csv',index=False)
+                            debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                            driver.quit()
                         
                     else:
                         debug = debug.append({
@@ -486,7 +488,7 @@ if __name__ == "__main__":
                                 'RESPONSE_LINK': response,
                                 "index":indx
                             },ignore_index=True)
-                        debug.to_csv(f'results_redfin{attemps}.csv',index=False)
+                        debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
 
                     folderExists = os.path.isdir("./downloads")
                     if folderExists:

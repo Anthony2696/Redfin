@@ -389,12 +389,20 @@ def initChromeDriver(dr,proxie=None):
     
     return driver
 
-def get_df(folder):
+def get_df(file_path):
     try:
-        for file in listdir(folder):
-            if '.csv' in file and '.~lock' not in file:
-                df = pd.read_csv('{}/{}'.format(folder,file),dtype=str,keep_default_na=False)
-                print('\tAbriendo',file)
+        if '.csv' in file_path:
+            if '.csv' in file_path and '.~lock' not in file_path:
+                df = pd.read_csv(file_path,dtype=str,keep_default_na=False)
+                print('\tAbriendo',file_path)
+                file = file_path.replace('input_divisions/','')
                 return df,file
-        return [],''
+        else:
+            folder = str(file_path)
+            for file in listdir(folder):
+                if '.csv' in file and '.~lock' not in file:
+                    df = pd.read_csv('{}/{}'.format(folder,file),dtype=str,keep_default_na=False)
+                    print('\tAbriendo',file)
+                    return df,file
+            return [],''            
     except: return [],''

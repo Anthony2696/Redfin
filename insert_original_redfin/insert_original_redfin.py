@@ -294,5 +294,4 @@ if __name__ == '__main__':
             df_report.to_csv(join(f'./{folder_name}/output/df_report_'+ file_name+str(time.strftime("%Y-%m-%d-%H:%M"))+ '.csv'), index=0)
             df_report.to_csv(join(f'./{folder_name}/df_report_'+ file_name+str(time.strftime("%Y-%m-%d-%H:%M"))+ '.csv'), index=0)
     
-    print("END")  
-
+    print("END")
