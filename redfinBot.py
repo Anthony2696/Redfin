@@ -159,9 +159,12 @@ if __name__ == "__main__":
     c_loc = 0
     attemps = 0
     cmd = 'sudo cyberghostvpn --traffic --country-code codecountry --connect'
-    country = 'AR' #Argentina
-    country2 = 'CL' #Chile
-    country3 = 'CO' #Colombia
+    d = {1:'BR', #brasil
+        2: 'CO', #colombia
+        3: 'CL', #chile
+        4: 'AR', #Argentina
+        5: 'CR' #costa rica
+    }
 
     if errors_in_inputs(str(state),str(location),str(filter_status),str(filter_sold),str(filter_timeRedfin)) != True:
         #GENERATE LIST TO SCRAPE       
@@ -193,6 +196,7 @@ if __name__ == "__main__":
             print('STATES AND LOCATIONS FILTERS: ',list_scrape.shape[0])
 
         while(attemps < 3 and list_scrape.shape[0] > 0):
+            c = d[random.randint(1,5)]
             debug = pd.DataFrame(columns=[
                 'zip_code',
                 'files_urls',
@@ -244,7 +248,7 @@ if __name__ == "__main__":
                 try:
                     if time_init_cyb == 0:
                         time_init_cyb = datetime.datetime.now()
-                        exec_cyberghost(cmd,country2)
+                        exec_cyberghost(cmd,c)
                         print('Time_init cyberghost',time_init_cyb,'Time_end cyberghost',time_end_cyb)
 
                     time_init = datetime.datetime.now()
