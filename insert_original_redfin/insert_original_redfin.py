@@ -280,7 +280,7 @@ if __name__ == '__main__':
     if '.~lock' in file_name:
             pass 
     elif ( '.csv' in file_name):
-        input_data_frame = pd.read_csv(f'./{file_name}', dtype=str, keep_default_na=False,low_memory=True, encoding="ISO-8859-1")    
+        input_data_frame = pd.read_csv(f'./{file_name}', dtype=str, keep_default_na=False,low_memory=True)    
         print ("Antes del llamado, para procesar: ", file_name)
         insert_redfin(input_data_frame, file_name)
 
@@ -294,5 +294,4 @@ if __name__ == '__main__':
             df_report.to_csv(join(f'./{folder_name}/output/df_report_'+ file_name+str(time.strftime("%Y-%m-%d-%H:%M"))+ '.csv'), index=0)
             df_report.to_csv(join(f'./{folder_name}/df_report_'+ file_name+str(time.strftime("%Y-%m-%d-%H:%M"))+ '.csv'), index=0)
     
-    print("END")  
-
+    print("END")
