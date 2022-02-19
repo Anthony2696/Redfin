@@ -210,8 +210,8 @@ horainit=$(date +%H)
 mininit=$(date +%M)
 year=$(date +%Y)
 month=$(date +%m)
-namefolder="$stateOpt[$locationOpt]-$year-$month-$dayinit[$horainit:$mininit]"
-
+fecha=$(date +%F)
+namefolder="$stateOpt[$locationOpt]-$fecha-$dayinit[$horainit:$mininit]"
 #./prepare_input.sh $namefolder
 
 python clean.py $stateOpt $locationOpt
