@@ -74,7 +74,7 @@ def db_connection(db):
 
     if (db == 'property_db'):
         mySQLconnection_Contractor = mysql.connector.connect(host='127.0.0.1',
-                        database='OriginalData',
+                        database='Original',
                         user='user_insert',
                         password='kl4v3.1ns3rt',
                         port=tunnel.local_bind_port)
@@ -131,7 +131,7 @@ def consult_redfin(addr,city,zip,sale_type,sold_date,price,sqft,lot_size,dollar_
     if status == None: status = 'is NULL'
     else: status = """= '%s'""" % (status)
     try:
-        query = """SELECT zip_code FROM OriginalData.Redfin where (street_address %s and city %s 
+        query = """SELECT zip_code FROM Original.Redfin where (street_address %s and city %s 
                 and zip_code = %s and sale_type %s and sold_date %s and price %s 
                 and square_feet %s and lot_size %s and dollar_for_square_feet %s and hoa_for_month %s 
                 and status %s);""" % (addr,city,zip,sale_type,sold_date,price,sqft,lot_size,dollar_sqft,hoa,status)
@@ -232,12 +232,12 @@ def insert_redfin(df, file_name):
 def delete_all_redfin():
     """
         NO USAR, BORRA TODo EL CONTENIDO
-        DE LA TABLA REDFIN EN LA BD ORIGINALDATA
+        DE LA TABLA REDFIN EN LA BD Original
     """
-    print('Start Delete Redfin from OriginalData')
+    print('Start Delete Redfin from Original')
     mySQLconnection_Property = db_connection('property_db')
     cursor = mySQLconnection_Property.cursor()
-    sql_insert_query = "DELETE FROM OriginalData.Redfin"
+    sql_insert_query = "DELETE FROM Original.Redfin"
     cursor.execute (sql_insert_query)
 
     mySQLconnection_Property.commit()
