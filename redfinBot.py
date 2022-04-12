@@ -191,7 +191,7 @@ if __name__ == "__main__":
 
             list_scrape = list_scrape.append({'zip_code':zip_code,'state_name':state_current,'city_name':city,'county_name':county},ignore_index=True)
         list_scrape.to_csv(f'list_{part}',index=False)
-        
+        del df
         if len(list_scrape) >0:
             print('STATES AND LOCATIONS FILTERS: ',list_scrape.shape[0])
 
@@ -245,195 +245,185 @@ if __name__ == "__main__":
 
             #-- PROCESS DOWNLOAD CSV --#
             for indx,row in tqdm(list_scrape.iterrows(), desc=f"Download by Zip Codes",total=len(list_scrape)):
-                try:
-                    if time_init_cyb == 0:
-                        time_init_cyb = datetime.datetime.now()
-                        exec_cyberghost(cmd,c)
-                        print('Time_init cyberghost',time_init_cyb,'Time_end cyberghost',time_end_cyb)
+                filter_status_aux = filter_status
+                filter_sold_aux = filter_sold
+                filter_timeRedfin_aux = filter_timeRedfin
+                retry = True
+                retry_c = 0
+                while retry == True:
+                    try:
+                        if time_init_cyb == 0:
+                            time_init_cyb = datetime.datetime.now()
+                            exec_cyberghost(cmd,c)
+                            print('Time_init cyberghost',time_init_cyb,'Time_end cyberghost',time_end_cyb)
 
-                    time_init = datetime.datetime.now()
-                    zip_code = str(row["zip_code"])
-                    state_current = str(row["state_name"])
+                        time_init = datetime.datetime.now()
+                        zip_code = str(row["zip_code"])
+                        state_current = str(row["state_name"])
 
-                    if zip_code.isdigit() == True:
-                        folderExists = os.path.isdir("./downloads")
-                        if folderExists:
-                            shutil.rmtree(f"{os.getcwd()}/downloads")
-                        os.mkdir("./downloads")
+                        if zip_code.isdigit() == True:
+                            folderExists = os.path.isdir("./downloads")
+                            if folderExists:
+                                shutil.rmtree(f"{os.getcwd()}/downloads")
+                            os.mkdir("./downloads")
 
-                        link = generate_link_redfin(str(zip_code),str(filter_status),str(filter_sold),str(filter_timeRedfin))
-                        print('\n\nconsulting link -> ',link,'\nfor state ->',state_current,'\n')
-                        
-                        
-                        try:
-                            driver = initChromeDriver(dr)
-                            driver.get(link)
-                            time.sleep(1)
-                            html = driver.page_source
-                            respObj = Selector(text=html)
-                            link_resp = driver.current_url
-                            ip_current = get_ip()
-                            response = ''
-                            link_gen = ''                       
+                            link = generate_link_redfin(str(zip_code),str(filter_status_aux),str(filter_sold_aux),str(filter_timeRedfin_aux))
+                            print('\n\nconsulting link -> ',link,'\nfor state ->',state_current,'\n')
+                            try:
+                                driver = initChromeDriver(dr)
+                                driver.get(link)
+                                time.sleep(1)
+                                html = driver.page_source
+                                respObj = Selector(text=html)
+                                link_resp = driver.current_url
+                                ip_current = get_ip()
+                                response = ''
+                                link_gen = ''                       
 
-                            download_url = respObj.xpath("//a[@id='download-and-save']/@href").get()                        
-                            homes = respObj.xpath('//div[@data-rf-test-id="homes-description"]//text()').extract()
-                            homes = [clean(e).lower() for e in homes]
+                                download_url = respObj.xpath("//a[@id='download-and-save']/@href").get()                        
+                                homes = respObj.xpath('//div[@data-rf-test-id="homes-description"]//text()').extract()
+                                homes = [clean(e).lower() for e in homes]
+                                if link_resp != link:
+                                    print('Links not equal!')
+                                    retry_c+=1
+                                    response = link_resp
+                                    link_gen = link
 
-                            if 'homes' in homes or 'home' in homes:
-                                if 'homes' in homes:
-                                    idx = homes.index('homes')
-                                    homes = homes[idx-2]
-                                elif 'home' in homes:
-                                    idx = homes.index('home')
-                                    homes = homes[idx-2]
-                                else: homes = ''
-                            else:
-                                for item in homes:
-                                    regex1 = re.findall(r'\d+\sof\s(\d+)\shomes',item)
-                                    if len(regex1)>0:
-                                        homes = regex1[0]
-                                        break
-                                    else:
-                                        regex2 = re.findall(r'(\d+)\s?homes|(\d+)\s?home',item)
-                                        if len(regex2) > 0:
-                                            if clean(item).find('homes') != -1:
-                                                homes = regex2[0][0]
-                                            elif clean(item).find('home') != -1:
-                                                homes = regex2[0][1]
+                                if 'homes' in homes or 'home' in homes:
+                                    if 'homes' in homes:
+                                        idx = homes.index('homes')
+                                        homes = homes[idx-2]
+                                    elif 'home' in homes:
+                                        idx = homes.index('home')
+                                        homes = homes[idx-2]
+                                    else: homes = ''
+                                else:
+                                    for item in homes:
+                                        regex1 = re.findall(r'\d+\sof\s(\d+)\shomes',item)
+                                        if len(regex1)>0:
+                                            homes = regex1[0]
                                             break
-                                if homes == list(): homes = ''
+                                        else:
+                                            regex2 = re.findall(r'(\d+)\s?homes|(\d+)\s?home',item)
+                                            if len(regex2) > 0:
+                                                if clean(item).find('homes') != -1:
+                                                    homes = regex2[0][0]
+                                                elif clean(item).find('home') != -1:
+                                                    homes = regex2[0][1]
+                                                break
+                                    if homes == list(): homes = ''                                    
+                        
+                                if download_url != None:
+                                    driver.get(f"https://www.redfin.com{download_url.replace('&num_homes=350','&num_homes=9999')}")
+                                    time.sleep(random.randint(5,10))
+                                    _,filename = get_df('./downloads')
 
-                            if link_resp != link:
-                                response = link_resp
-                                link_gen = link
-                      
-                            if download_url != None:
-                                driver.get(f"https://www.redfin.com{download_url.replace('&num_homes=350','&num_homes=9999')}")
-                                time.sleep(random.randint(5,10))
-                                _,filename = get_df('./downloads')
+                                    if filename != '':
+                                        shutil.move(f"{os.getcwd()}/downloads/{filename}",f"{os.getcwd()}/files_csv_{part_name}/results_{zip_code}_{indx}.csv")
+                                        df_zip_current = pd.read_csv(f'./files_csv_{part_name}/results_{zip_code}_{indx}.csv',dtype=str,keep_default_na=False)
 
-                                if filename != '':
-                                    shutil.move(f"{os.getcwd()}/downloads/{filename}",f"{os.getcwd()}/files_csv_{part_name}/results_{zip_code}_{indx}.csv")
-                                    df_zip_current = pd.read_csv(f'./files_csv_{part_name}/results_{zip_code}_{indx}.csv',dtype=str,keep_default_na=False)
-
-                                    num_match_zip = df_zip_current.shape[0]
-                                    try:
-                                        homes = int(homes)
-                                    except: 
-                                        num_match_zip = 0
-                                    #DEBUG
-                                    debug = debug.append({
+                                        num_match_zip = df_zip_current.shape[0]
+                                        try:
+                                            homes = int(homes)
+                                        except: 
+                                            num_match_zip = 0
+                                        #DEBUG
+                                        debug = debug.append({
+                                                "zip_code":zip_code,
+                                                "files_urls":[{"url":f"https://www.redfin.com{download_url.replace('&num_homes=350','&num_homes=9999')}",
+                                                            "name":f"results_{zip_code}_{indx}.csv"
+                                                            }],
+                                                "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
+                                                "numhomes":homes,
+                                                "num_match":num_match_zip/int(homes),
+                                                "reason":'good',
+                                                "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
+                                                "ip_request":ip_current,
+                                                'LINK_GENERATE': link_gen,
+                                                'RESPONSE_LINK': response,
+                                                "index":indx
+                                            },ignore_index=True)
+                                        debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                                    else:
+                                        #DEBUG
+                                        debug = debug.append({
                                             "zip_code":zip_code,
                                             "files_urls":[{"url":f"https://www.redfin.com{download_url.replace('&num_homes=350','&num_homes=9999')}",
                                                         "name":f"results_{zip_code}_{indx}.csv"
                                                         }],
                                             "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
                                             "numhomes":homes,
-                                            "num_match":num_match_zip/int(homes),
-                                            "reason":'good',
+                                            "num_match":'',
+                                            "reason":'Zip not downloaded',
                                             "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
                                             "ip_request":ip_current,
                                             'LINK_GENERATE': link_gen,
                                             'RESPONSE_LINK': response,
                                             "index":indx
                                         },ignore_index=True)
-                                    debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
-
+                                        debug.to_csv(f'results_redfin{attemps}_{part}',index=False) 
                                 else:
                                     #DEBUG
-                                    debug = debug.append({
-                                        "zip_code":zip_code,
-                                        "files_urls":[{"url":f"https://www.redfin.com{download_url.replace('&num_homes=350','&num_homes=9999')}",
-                                                    "name":f"results_{zip_code}_{indx}.csv"
-                                                    }],
-                                        "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
-                                        "numhomes":homes,
-                                        "num_match":'',
-                                        "reason":'Zip not downloaded',
-                                        "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
-                                        "ip_request":ip_current,
-                                        'LINK_GENERATE': link_gen,
-                                        'RESPONSE_LINK': response,
-                                        "index":indx
-                                    },ignore_index=True)
-                                    debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
-                                    
-                            else:
-                                #DEBUG
-                                if link_resp.lower().find('sitemap') != -1 or link_resp.lower().find('404') != -1:
-                                    debug = debug.append({
-                                            "zip_code":zip_code,
-                                            "files_urls":'',
-                                            "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
-                                            "numhomes":homes,
-                                            "reason":'no results for zip code, code 404',
-                                            "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
-                                            "ip_request":ip_current,
-                                            'LINK_GENERATE': link_gen,
-                                            'RESPONSE_LINK': response,
-                                            "index":indx
-                                        },ignore_index=True)
-                                    debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
-                                else:
-                                    try:
-                                        homes = int(homes)
-                                        if homes > 0:
-                                            addr,loc,price,beds,baths,size_sqft,price_sqft,on_redfin,url = extract_info_properties(respObj,driver,homes)
-                                            debug = debug.append({
-                                                    "zip_code":zip_code,
-                                                    "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
-                                                    "ip_request":ip_current,
-                                                    "index":indx
-                                                },ignore_index=True)
-                                            debug_zip_no_download = debug_zip_no_download.append({
-                                                                    "ADDRESS":addr,
-                                                                    "CITY":row["city_name"],
-                                                                    "STATE OR PROVINCE":row["state_name"],
-                                                                    "ZIP OR POSTAL CODE":zip_code,
-                                                                    "PRICE":price,
-                                                                    "BEDS":beds,
-                                                                    "BATHS":baths,
-                                                                    "LOCATION":loc,
-                                                                    "SQUARE FEET":size_sqft,
-                                                                    "DAYS ON MARKET":on_redfin,
-                                                                    "DOLLAR SQUARE FEET":price_sqft,
-                                                                    "URL":url
+                                    if link_resp.lower().find('sitemap') != -1 or link_resp.lower().find('404') != -1:
+                                        debug = debug.append({
+                                                "zip_code":zip_code,
+                                                "files_urls":'',
+                                                "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
+                                                "numhomes":homes,
+                                                "reason":'no results for zip code, code 404',
+                                                "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
+                                                "ip_request":ip_current,
+                                                'LINK_GENERATE': link_gen,
+                                                'RESPONSE_LINK': response,
+                                                "index":indx
                                             },ignore_index=True)
-                                            debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
-                                            debug_zip_no_download.to_csv(f"zip_no_download{attemps}_{part}",index=False)
-                                        else:
-                                            debug = debug.append({
-                                                    "zip_code":zip_code,
-                                                    "files_urls":'',
-                                                    "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
-                                                    "numhomes":homes,
-                                                    "reason":'no results for zip code, num_homes less than or equal to 0',
-                                                    "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
-                                                    "ip_request":ip_current,
-                                                    'LINK_GENERATE': link_gen,
-                                                    'RESPONSE_LINK': response,
-                                                    "index":indx
+                                        debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                                        retry_c=0
+                                    else:
+                                        try:
+                                            homes = int(homes)
+                                            if homes > 0:
+                                                addr,loc,price,beds,baths,size_sqft,price_sqft,on_redfin,url = extract_info_properties(respObj,driver,homes)
+                                                debug = debug.append({
+                                                        "zip_code":zip_code,
+                                                        "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
+                                                        "ip_request":ip_current,
+                                                        "index":indx
+                                                    },ignore_index=True)
+                                                debug_zip_no_download = debug_zip_no_download.append({
+                                                                        "ADDRESS":addr,
+                                                                        "CITY":row["city_name"],
+                                                                        "STATE OR PROVINCE":row["state_name"],
+                                                                        "ZIP OR POSTAL CODE":zip_code,
+                                                                        "PRICE":price,
+                                                                        "BEDS":beds,
+                                                                        "BATHS":baths,
+                                                                        "LOCATION":loc,
+                                                                        "SQUARE FEET":size_sqft,
+                                                                        "DAYS ON MARKET":on_redfin,
+                                                                        "DOLLAR SQUARE FEET":price_sqft,
+                                                                        "URL":url
                                                 },ignore_index=True)
-                                            debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
-                                    except:
-                                        block1 = respObj.xpath('//form[@id="rf_unblock"]//div[@id="captcha"]').get()
-                                        block2 = respObj.xpath('//div[@id="txt"]//p[2]//text()').get()
-                                        if block1 != None:
-                                            debug = debug.append({
-                                                    "zip_code":zip_code,
-                                                    "files_urls":'',
-                                                    "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
-                                                    "numhomes":homes,
-                                                    "reason":'locked',
-                                                    "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
-                                                    "ip_request":ip_current,
-                                                    'LINK_GENERATE': link_gen,
-                                                    'RESPONSE_LINK': response,
-                                                    "index":indx
-                                                },ignore_index=True)
-                                        elif block2 != None:
-                                            if block2.lower().find('complete the captcha') != -1:
+                                                debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                                                debug_zip_no_download.to_csv(f"zip_no_download{attemps}_{part}",index=False)
+                                            else:
+                                                debug = debug.append({
+                                                        "zip_code":zip_code,
+                                                        "files_urls":'',
+                                                        "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
+                                                        "numhomes":homes,
+                                                        "reason":'no results for zip code, num_homes less than or equal to 0',
+                                                        "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
+                                                        "ip_request":ip_current,
+                                                        'LINK_GENERATE': link_gen,
+                                                        'RESPONSE_LINK': response,
+                                                        "index":indx
+                                                    },ignore_index=True)
+                                                debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                                        except:
+                                            block1 = respObj.xpath('//form[@id="rf_unblock"]//div[@id="captcha"]').get()
+                                            block2 = respObj.xpath('//div[@id="txt"]//p[2]//text()').get()
+                                            if block1 != None:
                                                 debug = debug.append({
                                                         "zip_code":zip_code,
                                                         "files_urls":'',
@@ -446,30 +436,60 @@ if __name__ == "__main__":
                                                         'RESPONSE_LINK': response,
                                                         "index":indx
                                                     },ignore_index=True)
-                                        else:
-                                            debug = debug.append({
-                                                    "zip_code":zip_code,
-                                                    "files_urls":'',
-                                                    "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
-                                                    "numhomes":homes,
-                                                    "reason":'no results for zip code, num_homes not found',
-                                                    "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
-                                                    "ip_request":ip_current,
-                                                    'LINK_GENERATE': link_gen,
-                                                    'RESPONSE_LINK': response,
-                                                    "index":indx
-                                                },ignore_index=True)
+                                            elif block2 != None:
+                                                if block2.lower().find('complete the captcha') != -1:
+                                                    debug = debug.append({
+                                                            "zip_code":zip_code,
+                                                            "files_urls":'',
+                                                            "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
+                                                            "numhomes":homes,
+                                                            "reason":'locked',
+                                                            "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
+                                                            "ip_request":ip_current,
+                                                            'LINK_GENERATE': link_gen,
+                                                            'RESPONSE_LINK': response,
+                                                            "index":indx
+                                                        },ignore_index=True)
+                                            else:
+                                                debug = debug.append({
+                                                        "zip_code":zip_code,
+                                                        "files_urls":'',
+                                                        "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
+                                                        "numhomes":homes,
+                                                        "reason":'no results for zip code, num_homes not found',
+                                                        "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
+                                                        "ip_request":ip_current,
+                                                        'LINK_GENERATE': link_gen,
+                                                        'RESPONSE_LINK': response,
+                                                        "index":indx
+                                                    },ignore_index=True)
 
-                                        debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
-                            driver.quit()
-                        except Exception as e:
-                            print('***Error Execute***:',e)
+                                            debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                                            retry_c=0
+                                driver.quit()
+                            except Exception as e:
+                                print('***Error Execute***:',e)
+                                debug = debug.append({
+                                        "zip_code":zip_code,
+                                        "files_urls":'',
+                                        "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
+                                        "numhomes":homes,
+                                        "reason":'Error during execute',
+                                        "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
+                                        "ip_request":ip_current,
+                                        'LINK_GENERATE': link_gen,
+                                        'RESPONSE_LINK': response,
+                                        "index":indx
+                                    },ignore_index=True)
+                                debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                                driver.quit()     
+                        else:
                             debug = debug.append({
                                     "zip_code":zip_code,
                                     "files_urls":'',
                                     "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
-                                    "numhomes":homes,
-                                    "reason":'Error during execute',
+                                    "numhomes":'',
+                                    "reason":'Zip not valid',
                                     "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
                                     "ip_request":ip_current,
                                     'LINK_GENERATE': link_gen,
@@ -477,34 +497,28 @@ if __name__ == "__main__":
                                     "index":indx
                                 },ignore_index=True)
                             debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
-                            driver.quit()
+
+                        folderExists = os.path.isdir("./downloads")
+                        if folderExists:
+                            shutil.rmtree(f"{os.getcwd()}/downloads")
                         
-                    else:
-                        debug = debug.append({
-                                "zip_code":zip_code,
-                                "files_urls":'',
-                                "date_create_source":str(time.strftime("%Y-%m-%d-%H:%M:%S")),
-                                "numhomes":'',
-                                "reason":'Zip not valid',
-                                "TIME_DOWNLOAD_IN_SECONDS":(datetime.datetime.now() - time_init).total_seconds(),
-                                "ip_request":ip_current,
-                                'LINK_GENERATE': link_gen,
-                                'RESPONSE_LINK': response,
-                                "index":indx
-                            },ignore_index=True)
-                        debug.to_csv(f'results_redfin{attemps}_{part}',index=False)
+                        time_end_cyb = datetime.datetime.now()
+                        if (time_end_cyb - time_init_cyb).total_seconds() >= 420: # Establecer la frecuencia con que rotara la ip (en segundos)
+                            time_init_cyb = 0
 
-                    folderExists = os.path.isdir("./downloads")
-                    if folderExists:
-                        shutil.rmtree(f"{os.getcwd()}/downloads")
+                        if retry_c == 1:
+                            retry_c+=1
+                            print('THE RESPONSE LINK HAS CHANGED. TRYING TO SOLVE...')
+                            filter_status_aux = '6'
+                            filter_sold_aux = filter_sold
+                            filter_timeRedfin_aux = '13'
+                            continue
+
+                    except Exception as e:
+                        print('***ERROR***: ',e)
                     
-                    time_end_cyb = datetime.datetime.now()
-                    if (time_end_cyb - time_init_cyb).total_seconds() >= 420: # Establecer la frecuencia con que rotara la ip (en segundos)
-                        time_init_cyb = 0
-
-                except Exception as e:
-                    print('***ERROR***: ',e)            
-
+                    retry = False
+            
             #attemps += 1
             #debug.to_csv(f'results_redfin{attemps}.csv',index=False)
             #states_in_list = [ e for e in list_scrape["state_name"] ]
@@ -528,7 +542,10 @@ if __name__ == "__main__":
             list_scrape = pd.DataFrame(data)
             """
             list_scrape = list_scrape.drop(zips_downloaded,axis=0)
+            del debug
+            del debug_zip_no_download
 
-        exec_cyberghost('','','yes')                       
+        exec_cyberghost('','','yes')
+        del list_scrape                       
     else:
         print('1')
