@@ -15,8 +15,12 @@
 #source /home/ubuntu/Redfin/redfin/bin/activate 
 source /home/kukuno1/Desktop/Redfin_CSV/redfin/bin/activate #Ruta del entorno virtual del proyecto
 #source /home/anthony/kukun/bin/activate
-#cd /home/kukuno1/Desktop/Redfin_CSV/redfin_csv_daemonExec/ #Ruta de la carpeta donde se ejecuta el demonio
-cd /home/anthony/Documentos/workKukun/Redfin/Redfin_CSV/download_process_new/Test3_vpncyberghost
+cd /home/kukuno1/Desktop/Redfin_CSV/redfin_csv_daemonExec/ #Ruta de la carpeta donde se ejecuta el demonio
+#cd /home/anthony/Documentos/workKukun/Redfin/Redfin_CSV/download_process_new/Test3_vpncyberghost
+dayinit=$(date +%A)
+horainit=$(date +%H)
+mininit=$(date +%M)
+nohup echo $"Day Init $dayinit a las $horainit:$mininit" > timeInit.txt
 
 ###############PROCESO DE DESCARGA REDFIN ###############
 if [ -d input_divisions ]; then
@@ -156,3 +160,7 @@ if [ "$6" = 'y' ]; then
 	#./exe.sh $namefolder
 	cd ..
 fi
+dayinit=$(date +%A)
+horainit=$(date +%H)
+mininit=$(date +%M)
+nohup echo $"Day Init $dayinit a las $horainit:$mininit" > timeEnd.txt
