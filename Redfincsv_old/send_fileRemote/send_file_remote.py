@@ -12,7 +12,9 @@ def sftp_connect_put(localfile,remotefile):
     try:
         mypkey = paramiko.RSAKey.from_private_key_file('./TunelSsh(NOBORRAR)/KUKUN_DATA_TEAM_NOV_2020.pem')
 
-        pt = paramiko.Transport('52.52.75.149',22) #Cambiar ip del servidor
+        #pt = paramiko.Transport('52.52.75.149',22) #Cambiar ip del servidor
+        pt = paramiko.Transport('13.57.62.82',22) #Cambiar ip del servidor        
+        
         pt.connect(username='ubuntu',pkey=mypkey)
         sftp = paramiko.SFTPClient.from_transport(pt)
         sftp.put(localfile,remotefile)
@@ -27,7 +29,7 @@ def sftp_connect_get(localfile,remotefile):
         a ruta local.
     """
     try:
-        t = paramiko.Transport('50.18.238.132', 22) #Cambiar ip del servidor 
+        t = paramiko.Transport('13.57.62.82', 22) #Cambiar ip del servidor 
         t.connect(username='admin', password='Admin@123')
         #
         sftp = paramiko.SFTPClient.from_transport(t)
@@ -42,7 +44,7 @@ if __name__ == '__main__':
 
     for file in tqdm(list_files, desc=f"Transfer file",total=len(list_files)):
         try:
-            sftp_connect_put('./input_file/{}'.format(file),'/home/ubuntu/Redfin/insert_original_redfin/{}/input_data/{}'.format(folder_name,file))
+            sftp_connect_put('./input_file/{}'.format(file),'/home/ubuntu/Redfin/Redfin_csv/insert_original_redfin/{}/input_data/{}'.format(folder_name,file))
 
         except: print('Archivo defectuoso',file)
 

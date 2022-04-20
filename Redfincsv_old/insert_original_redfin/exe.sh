@@ -1,10 +1,15 @@
-#cd /home/ubuntu//Redfin/insert_original_redfin/
-cd $(pwd)
-source /home/anthony/kukun/bin/activate
+#cd /home/ubuntu/Redfin/insert_original_redfin/ #ruta para servidor 52.52.75.149
+cd /home/ubuntu/Redfin/Redfin_csv/insert_original_redfin/ #ruta para servidor  13.57.62.82
+#source /home/anthony/kukun/bin/activate
 #source /home/kukuno1/Desktop/Redfin_CSV/redfin/bin/activate
 
-
-python split_csv.py "$1"
+cd $1
+dayinit=$(date +%A)
+horainit=$(date +%H)
+mininit=$(date +%M)
+nohup echo $"Day Init $dayinit a las $horainit:$mininit" > timeInit_insertOri.txt
+cd ..
+python3 split_csv.py "$1"
 
 directorio_files_csv="$1"/input_data/divisions
 #directorio_files_input=$1/input_data/divisions/part*.csv
@@ -22,3 +27,9 @@ if [ -d $directorio_files_csv ];then
 else
 	echo "¡¡El directorio: $directorio_files_csv, no existe!!"
 fi
+cd $1
+dayinit=$(date +%A)
+horainit=$(date +%H)
+mininit=$(date +%M)
+nohup echo $"Day End $dayinit a las $horainit:$mininit" > timeEnd_insertOri.txt
+cd ..

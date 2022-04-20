@@ -1,0 +1,266 @@
+README
+
+SPANISH
+
+REQUISITOS PREVIOS:
+
+1. TENER DOCKER INSTALADO Y CYBERGHOSTVPN
+2. CREAR ENTORNO VIRTUAL E INSTALAR EL requirements.txt
+3. MODIFICAR LAS RUTAS EN "daemon_redfin_csv.sh", "run_redfin_csv.sh"
+4. EN CASO DE CAMBIAR LA EJECUCION DE LA INSERCION DEBE MODIFICAR LAS RUTAS EN "prepare_input.sh", "clean.py", 
+"./insert_original_redfin/exe.sh", "run_redfin_csv.sh".
+
+** METODO DE EJECUCION **
+
+	1. INGRESAR EL ARCHIVO ".CSV" DE ENTRADA EN LA CARPETA "./input"
+
+		NOTA1: Para este proyecto se usa el ".csv" de entrada llamado "Zip_normal.csv", en
+		caso de cambiar el input, debe asegurarse que las columnas se llamen igual y tengan el
+		mismo formato que "Zip_normal.csv".
+		
+	2. EJECUTAR EL PROYECTO:
+	
+		a. Usando "run_redfin_csv.sh"
+
+			$ ./run_redfin_csv.sh
+			
+			NOTA: EL EJECUTABLE PEDIRA LAS ENTRADAS NECESARIAS PARA EL AUTOMATIZADO, EN CASO DE EQUIVOCARSE
+			EL EJECUTABLE VOLVERA A PEDIR TODAS LAS ENTRADAS. LOS DATOS DESCARGADOS QUEDARAN EN LA MAQUINA DONDE
+			SE EJECUTE EL AUTOMATIZADO Y LAS SALIDAS DE LA INSERCION QUEDARAN EN EL SERVIDOR REMOTO QUE TENGA 
+			CONFIGURADO EL PROYECTO. MUY IMPORTANTE EN CASO DE NO QUERER FILTRAR POR ESTADO NI CIUDAD (PARA TODA USA),
+			PRESIONE ENTER, CUANDO SE LE PIDAN ESAS ENTRADAS.
+
+		B. USANDO "daemon_redfin_csv.sh"
+			
+			$ ./daemon_redfin_csv.sh $1 $2 $3 $4 $5 $6
+			
+			$1: Estado que se filtrara en el formato de dos letras, colocar 0 si no desea filtrar ningun estado (toda USA).
+			$2: Ciudad y Condado que se filtrara, colocar 0 si no desea filtrar ninguna ciudad y condado.
+			$3: Filtro status en redfin, las opciones validas son del 1 al 6 (ver Status_Redfin mas abajo de esta doc).
+			$4: Filtro properties sold en redfin, las opciones validas son del 1 al 9 (ver Sold_Redfin mas abajo de esta doc).
+			$5: Filtro time on redfin, las opciones validas son del 1 al 13 (ver Time_On_Redfin mas abajo de esta doc).
+			$6: Validar si las ejecuciones se quieren insertar a la base de datos OriginalData.Redfin, Colocar Y/y para
+			    insertar en la base de datos, colocar N/n para no hacerlo.
+			
+			Nota: Este ejecutable se hizo con el fin de ejecutarlo con ayuda del demonio de cron (linux), esto con 
+			la finalidad de poder darle una frecuencia a la ejecucion, es decir, que se ejecute en un periodo de tiempo,
+			Ejemplo: ejecutar el estado de AZ para la ciudad maricopa county , con filtro status: ACTIVE LISTINGS, filtro
+			sold: LAST 5 YEAR y filtro time_on_redfin: NO MAX. debe ademas saber configurar el demonio cron (Ver Demonio_Cron
+			mas abajo).
+			
+			$ ./daemon_redfin_csv.sh az maricopa_county 1 8 13 
+
+** SIGNIFICADO DE LOS ARCHIVOS GENERADOS DURANTE EL PROCESO: **
+	1. downloaded.csv: Es el archivo fusionado de todo el conjunto de archivos descargados por el scrapy. Este se encuentra
+	en la carpeta merge del proyecto.
+	2. results_redfin: Es el archivo guia fusionado de todo el conjunto de archivos generados por el proceso de descarga. Este se 
+	en la carpeta merge del proyecto.
+	3. Redfin_CSV: Es la data final , que se logro obtener en todo el proceso de descarga, es decir. es el downloaded.csv pasado
+	por un proceso de limpieza.
+	4. df_report: Son los archivos con la funcion de visualizar los reportes de MySQL durante el proceso de insertar en la base de 		datos. Este se encuentra en el servidor remoto que tenga configurado el proyecto, en su carpeta especifica generada.
+	5. output_Redfin_CSV: Son los archivos con la funcion de visualizar las propiedades que se insertaron en la base de datos. Este se 		encuentra en el servidor remoto que tenga configurado el proyecto, en su carpeta especifica generada.
+
+** Status_Redfin **
+	PRESS 1, ACTIVE LISTINGS
+	PRESS 2, COMING SOON LISTINGS
+	PRESS 3, ACTIVE+COMING SOON LISTINGS
+	PRESS 4, ACTIVE+UNDER CONTRACT/PENDING
+	PRESS 5, ONLY UNDER CONTRACT/PENDING
+	PRESS 6, NOTHING
+
+** Sold_Redfin **
+	PRESS 1, LAST 1 WEEK
+	PRESS 2, LAST 1 MONTH
+	PRESS 3, LAST 3 MONTH
+	PRESS 4, LAST 6 MONTH
+	PRESS 5, LAST 1 YEAR
+	PRESS 6, LAST 2 YEAR
+	PRESS 7, LAST 3 YEAR
+	PRESS 8, LAST 5 YEAR
+	PRESS 9, NOTHING
+
+** Time_On_Redfin **
+	PRESS 1, NEW LISTINGS
+	PRESS 2, LESS THAN 3 DAYS
+	PRESS 3, LESS THAN 7 DAYS
+	PRESS 4, LESS THAN 14 DAYS
+	PRESS 5, LESS THAN 30 DAYS
+	PRESS 6, MORE THAN 7 DAYS
+	PRESS 7, MORE THAN 14 DAYS
+	PRESS 8, MORE THAN 30 DAYS
+	PRESS 9, MORE THAN 45 DAYS
+	PRESS 10, MORE THAN 60 DAYS
+	PRESS 11, MORE THAN 90 DAYS
+	PRESS 12, MORE THAN 180 DAYS
+	PRESS 13, NO MAX
+
+** Demonio_Cron **
+	Agregar tareas a crontab
+
+	Ejecutamos la edición del crontab con "$ crontab -e", en algunas distros (como ubuntu) nos da la opcion de elegir el editor de 		textos que deseemos, los demás nos quedamos con vi/vim. El archivo crontab lucirá algo asi.
+
+	# m h dom mon dow user command
+	donde:
+
+	m: corresponde al minuto en que se va a ejecutar el script, el valor va de 0 a 59
+	h: la hora exacta, se maneja el formato de 24 horas, los valores van de 0 a 23, siendo 0 las 12:00 de la medianoche.
+	dom: hace referencia al día del mes, por ejemplo se puede especificar 15 si se quiere ejecutar cada dia 15
+	dow: significa el día de la semana, puede ser numérico (0 a 7, donde 0 y 7 son domingo) o las 3 primeras letras del día en inglés: 		     mon, tue, wed, thu, fri, sat, sun.
+	user: define el usuario que va a ejecutar el comando, puede ser root, u otro usuario diferente siempre y cuando tenga permisos de 		      ejecución del script.
+	command: refiere al comando o a la ruta absoluta del script a ejecutar, ejemplo: /home/usuario/scripts/actualizar.sh, si acaso llama 		         a un script este debe ser ejecutable. EJEMPLOS:
+
+			15 10 * * * usuario /home/usuario/scripts/actualizar.sh
+			
+		Ejecutará el script actualizar.sh a las 10:15 a.m. todos los días.
+		
+			15 22 * * * usuario /home/usuario/scripts/actualizar.sh
+		
+		Ejecutará el script actualizar.sh a las 10:15 p.m. todos los días
+
+			30 7 20 11 * /home/usuario/scripts/actualizar.sh
+		
+		El día 20 de noviembre a las 7:30 el usuario con que se abre este cron correra el script.
+
+MUY IMPORTANTE:
+
+	1. LA MAQUINA DONDE SE EJECUTE EL AUTOMATIZADO DEBE TENER INSTALADO CYBERGHOSTVPN, YA QUE EL BOT UTILIZA EL COMANDO PARA VARIAR LA 		IP.
+	2. NO PUEDEN CAMBIAR LA IP USANDO CYBERGHOSTVPN , YA SEA MANUALMENTE U EN OTROS PROCESOS QUE SE ESTEN EJECUTANDO EN LA MISMA MAQUINA 		DEL AUTOMATIZADO, YA QUE EL AUTOMATIZADO ESTABLECE CONEXION ATRAVES DE UN TUNNEL SSH A LOS SERVIDORES REMOTOS PARA EJECUTAR LA 		INSERCION,CAMBIAR LA IP EN ESE MOMENTO DETENDRIA LA CONEXION ENTRE LA MAQUINA Y EL SERVIDOR REMOTO Y POR ENDE DETENDRIA LA INSERCION.
+
+** CONFIGURACIONES **
+
+	SERVIDOR REMOTO: 13.57.62.82
+	RUTA EN EL SERVIDOR: /home/ubuntu/Redfin/Redfin_csv/insert_original_redfin/ 
+
+ENGLISH
+
+PREVIOUS REQUIREMENTS:
+
+1. Have installed Docker
+2. Create virtual environment and install the requirements.txt
+3. Modify the routes in "daemon_redfin_csv.sh", "Run_REDFIN_CSV.SH"
+4. In case of changing the execution of the insert, you must modify the routes in "prepare_input.sh", "Clean.py",
+"./insert_original_redfin/exe.sh", "Run_REDFIN_CSV.SH".
+
+** EXECUTION METHOD **
+
+	1. Enter the ".csv" input file in the "./input" folder "
+
+	Note1: For this project, the entry ".csv" called "zip_normal.csv" is used, in
+	case of changing the input, you should make sure that the columns are called the same and have the
+	same format that "zip_normal.csv".
+
+	2. Execute the project:
+
+	A. Using "Run_REDFIN_CSV.SH"
+
+		$ ./run_redfin_csv.sh.
+
+		Note: The executable will ask the necessary entries for the automated, if they are wrong
+		The executable will go back to order all the tickets. The downloaded data will be on the machine where
+		The automated and the insert outputs are run on the remote server that has
+		Configured the project. Very important in case of not wanting to filter by state or city (for all uses),
+		Press ENTER, when you ask for those tickets.
+
+	B. Using "daemon_redfin_csv.sh"
+
+		$ ./daemon_redfin_csv.sh $ 1 $ 2 $ 3 $ 4 $ 5 $ 6
+
+		$ 1: State that will be filtered in the two-letter, place 0 if you do not want to filter any state (all use).
+		$ 2: City and county that will be filtered, place 0 if you do not want to filter any city and county.
+		$ 3: Status filter in Redfin, the valid options are from 1 to 6 (see status_redfin below this DOC).
+		$ 4: Filter Properties SOLD in Redfin, the valid options are from 1 to 9 (see Sold_REDFIN below this DOC).
+		$ 5: Filter Time on Redfin, the valid options are from 1 to 13 (see time_on_redfin below this doc).
+		$ 6: Validate if the executions want to be inserted to the original DatabaseData.Redfin, Place and / and for
+		Insert into the database, place n / n not to do so.
+
+		Note: This executable was done in order to execute it with the help of the demon of Cron (Linux), this with
+		the purpose of being able to give it a frequency to the execution, that is, to be executed in a period of time,
+		Example: Execute the AZ status for the city Maricopa County, with Status filter: Active Listings, Filter
+		SOLD: LAST 5 year and filter Time_on_redfin: No Max. must also know how to configure the cron demon (see demon_cron
+		below).
+
+			$ ./daemon_redfin_csv.sh AZ Maricopa_County 1 8 13
+
+** Meaning of files generated during the process **
+
+	1. Downloaded.csv: is the file merged all the file set downloaded by the scrapy. This is found
+			   In the Merge folder of the project.
+	2. results_redfin: It is the file merged guide of the entire set of files generated by the download process. This is
+			   In the Merge folder of the project.
+	3. Redfin_CSV: It is the final data, which can be achieved throughout the download process, that is. is the downloaded.csv past
+		       For a cleaning process.
+	4. DF_REPORT: They are the files with the function of visualizing the MySQL reports during the process of inserting into the 			      database. This is on the remote server that has the project configured, in its specific folder generated.
+	5. OUTPUT_REDFIN_CSV: They are the files with the function of visualizing the properties that were inserted into the database. This 				      is on the remote server that has the project configured, in its specific folder generated.
+
+** Status_redfin **
+	Press 1, Active Listings
+	Press 2, Coming Soon Listings
+	PRESS 3, Active + Coming Soon Listings
+	PRESS 4, Active + Under Contract / Pending
+	PRESS 5, Only Under Contract / Pending
+	Press 6, Nothing
+
+** Sold_redfin **
+	PRESS 1, LAST 1 Week
+	Press 2, Last 1 Month
+	PRESS 3, LAST 3 MONTH
+	PRESS 4, LAST 6 MONTH
+	PRESS 5, LAST 1 year
+	PRESS 6, LAST 2 YEAR
+	PRESS 7, LAST 3 year
+	PRESS 8, LAST 5 year
+
+
+Press 9, Nothing
+
+** Time_on_redfin **
+	PRESS 1, NEW LISTINGS
+	Press 2, LESS THAN 3 Days
+	PRESS 3, LESS THAN 7 DAYS
+	PRESS 4, LESS THAN 14 Days
+	PRESS 5, LESS THAN 30 Days
+	Press 6, More Than 7 Days
+	Press 7, More Than 14 Days
+	Press 8, More Than 30 Days
+	Press 9, More Than 45 Days
+	Press 10, More Than 60 Days
+	Press 11, More Than 90 Days
+	Press 12, More Than 180 Days
+	Press 13, No Max
+
+** Demon_Cron **
+	Add Tasks to Crontab
+
+	We executed the edition of the crontab with "$ Crontab -E", in some distros (as Ubuntu) gives us the option to choose the text 		editor we wish, the others we stay with VI / VIM. The crontab file will look something like that.
+
+	# m H Dom Mon Dow User Command
+	where:
+
+	M: corresponds to the minute in which the script is going to be executed, the value goes from 0 to 59
+	H: The exact time, the 24-hour format is handled, the values ​​range from 0 to 23, being 0 12:00 on midnight.
+	DOM: Reference is referenced to the day of the month, for example you can specify 15 if you want to execute every day 15
+	Dow: It means the day of the week, it can be numeric (0 to 7, where 0 and 7 are Sunday) or the first 3 letters of the day in 		     English: Mon, Tue, Wed, Thu, Fri, Sat, Sun.
+	User: Defines the user who will run the command, it can be root, or other different user as long as it has script execution 		      permissions.
+	Command: Refers to the command or to the absolute route of the script to be executed, Example: /home/usuario/Scripts/Actualize.sh, 			 if you call a script this should be executable. Examples:
+
+			15 10 * * * User /home/usuario/Scripts/Actualization.sh
+
+		Execute the Update.sh script at 10:15 A.m. every day.
+
+			15 22 * ​​* * User / HOME/USEUARIO/SCRIPTS/UCTUALIZE.SH
+
+		Execute the Update.sh script at 10:15 p.m. every day
+
+			30 7 20 11 * /home/usuario/Scripts/Actualization.sh
+
+		On November 20 at 7:30 the user with which this cron is opened, the script opens.
+
+VERY IMPORTANT:
+
+	1. The machine where the automated is executed must have CYBERGHOSTVPN installed, since the bot uses the command to vary the VPN.
+	2. Can not change the IP using CyberGhostVPN, either manually or other processes that are running on the same machine, as the 		automated connection through an SSH tunnel to remote servers to execute the insert,Changing the IP at that time would stop the 		connection between the machine and the remote server and therefore stop the insert.
+
+** Settings **
+
+	Remote server: 13.57.62.82
+	Route on the server: /home/ubuntu/Redfin/Redfin_csv/insert_original_redfin/ 
