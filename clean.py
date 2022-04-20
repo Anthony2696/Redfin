@@ -3,8 +3,9 @@ import pandas as pd
 import re
 import time
 from tqdm import tqdm
-from os import rename
 from sys import argv #importar argumentos desde la terminal
+from property_dictionary import table_states
+tqdm.pandas()
 
 def Date_Convert(ListDate,sep,separador_csv):
 	"""
@@ -268,6 +269,26 @@ def split_df(df):
 	df = pd.DataFrame(data)
 	return df
 
+def getFipsCode(row):
+    """
+        PROCESO DE OBTENCION DE FIPS CODE
+        PARA UN DATAFRAME QUE CONTENGA LAS
+        COLUMNAS ESTADO Y ZIPCODE
+    """
+    global zip_city
+    zip_code = row["ZIP OR POSTAL CODE"]
+    state = row["STATE OR PROVINCE"]
+    
+    try:
+        state_code = table_states[f"{state.upper()}"]
+        aux = zip_city[zip_city["zip_code"] == zip_code]
+        aux = aux[aux["state_code"] == state_code]
+        if not aux.empty:
+            row["state_county_fips_code"] = aux.iloc[0,4]
+        else: row["state_county_fips_code"] = ''
+    except: row["state_county_fips_code"] = ''
+    return row
+
 def RedfinTable(df,df_no_download,state,loc):
 	"""
 	Funcion para generar
@@ -314,6 +335,8 @@ def RedfinTable(df,df_no_download,state,loc):
 	pt_df = depuracion(pt_df)
 	
 	pt_df = join_csv(pt_df,df_no_download)
+	print('ADDING FIPS CODE ...')
+	pt_df = pt_df.progress_apply(lambda r: getFipsCode(r),axis=1)
 	pt_df.to_csv('Redfin_Csv_{}-{}_{}.csv'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)
 	#pt_df.to_csv('./insert_original_redfin/{}/input_data/Redfin_Csv_{}-{}_{}.csv'.format(folder,state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)
 	pt_df.to_csv('./send_fileRemote/input_file/Redfin_Csv_{}-{}_{}.csv'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)		
@@ -321,9 +344,10 @@ def RedfinTable(df,df_no_download,state,loc):
 	#rename('files_csv','files_csv_{}-{}_{}'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))))
 	print('Generated Redfin_CSV')
 
-def main():
+if __name__ == "__main__":
 	script,state,loc = argv
-	
+	zip_city = pd.read_csv("zip_city.csv",dtype=str,keep_default_na=False)
+
 	if state == '0':
 		state = ''
 	if loc == '0':
@@ -365,16 +389,14 @@ def main():
 							"LATITUDE",
 							"LONGITUDE"
         				])
-	
 	try:
 		df = pd.read_csv("./merge/downloaded.csv",dtype=str,keep_default_na=False)
 		RedfinTable(df,df_no_download,state,loc)
 	except:
 		print('Nothing to Do. downloaded.csv not found!!')
+		df_no_download["state_county_fips_code"] = ''
 		df_no_download.to_csv('Redfin_Csv_{}-{}_{}.csv'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)
 		#df_no_download.to_csv('./insert_original_redfin/{}/input_data/Redfin_Csv_{}-{}_{}.csv'.format(folder,state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)
 		df_no_download.to_csv('./send_fileRemote/input_file/Redfin_Csv_{}-{}_{}.csv'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))),index=False)		
 		#rename('files_csv','files_csv_{}-{}_{}'.format(state,loc,str(time.strftime("%Y-%m-%d-%H:%M"))))
 		print('Generated Redfin_CSV, with zip_no_downloaded.')
-	
-main()
