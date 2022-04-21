@@ -6,8 +6,8 @@
 
 cd $(pwd)
 #source /home/ubuntu/Redfin/redfin/bin/activate #COLOCAR RUTA ESPECIFICA DONDE SE ENCUENTRE EL PROYECTO
-source /home/kukuno1/Desktop/Redfin_CSV/redfin/bin/activate
-#source /home/anthony/kukun/bin/activate
+#source /home/kukuno1/Desktop/Redfin_CSV/redfin/bin/activate
+source /home/anthony/kukun/bin/activate
 ######################ENTER FILTERS REDFIN########################
 while :
 do
@@ -170,6 +170,27 @@ for file in results_redfin*.csv; do
 		mv "$file" ./merge/input/; #mueve archivos .csv descargados en el proceso de descarga para ser fusionados
 	fi
 done
+directorio_files_csv=files_retry_results_redfin_*
+for d in $directorio_files_csv; do
+	if [ -d "$d" ];then
+		if [ "$(ls $d)" ]; then
+			for file in $d/results_redfin*.csv; do
+				if [ -f $file ]; then
+					cp "$file" ./merge/input/; #mueve archivos .csv descargados en el proceso de descarga para ser fusionados
+				else
+					echo "No existe results_redfin dentro de $d"
+				fi
+			done
+			rm -r $d
+		else
+			rm -r $d
+			echo "¡¡El directorio: $d, esta vacio!!"
+		fi
+	else
+		echo "¡¡El directorio: $d, no existe!!"
+	fi
+done
+
 cd merge/
 python merge.py results_redfin $stateOpt $locationOpt #results_redfin es el nombre del archivo que generara el merge.py
 for file in input/*.csv; do 
@@ -184,6 +205,27 @@ for file in zip_no_download*.csv; do
 		mv "$file" ./merge/input/; #mueve archivos .csv descargados en el proceso de descarga para ser fusionados
 	fi
 done
+directorio_files_csv=files_retry_results_redfin_*
+for d in $directorio_files_csv; do
+	if [ -d "$d" ];then
+		if [ "$(ls $d)" ]; then
+			for file in $d/zip_no_download*.csv; do
+				if [ -f $file ]; then
+					cp "$file" ./merge/input/; #mueve archivos .csv descargados en el proceso de descarga para ser fusionados
+				else
+					echo "No existe zip_no_download dentro de $d"
+				fi
+			done
+			rm -r $d
+		else
+			rm -r $d
+			echo "¡¡El directorio: $d, esta vacio!!"
+		fi
+	else
+		echo "¡¡El directorio: $d, no existe!!"
+	fi
+done
+
 cd merge/
 python merge.py zip_no_download 0 0 #results_redfin es el nombre del archivo que generara el merge.py
 for file in input/*.csv; do 

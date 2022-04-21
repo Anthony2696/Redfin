@@ -72,18 +72,12 @@ def close_ssh_tunnel():
 def db_connection(db):
     open_ssh_tunnel()
 
-    if (db == 'property_db'):
+    if (db == 'original_db'):
         mySQLconnection_Contractor = mysql.connector.connect(host='127.0.0.1',
                         database='Original',
                         user='user_insert',
                         password='kl4v3.1ns3rt',
                         port=tunnel.local_bind_port)
-        """
-        user='root',
-        password='mysql')                        
-        user='user_insert',
-        password='kl4v3.1ns3rt')
-        """
         print("conexion")
         return(mySQLconnection_Contractor)
     close_ssh_tunnel()
@@ -92,7 +86,7 @@ def db_connection(db):
 df_report = pd.DataFrame(columns=['file_name','street_address', 'error'])
 df_output = pd.DataFrame(columns=['redfin_original_id', 'SALE TYPE', 'SOLD DATE', 'PROPERTY TYPE', 'ADDRESS', 'CITY', 'STATE OR PROVINCE',
     'ZIP OR POSTAL CODE', 'PRICE', 'BEDS', 'BATHS', 'LOCATION', 'SQUARE FEET', 'LOT SIZE', 'YEAR BUILT', 'DAYS ON MARKET', '$/SQUARE FEET',
-    'HOA/MONTH', 'STATUS', 'URL', 'SOURCE', 'MLS#', 'LATITUDE', 'LONGITUDE'])
+    'HOA/MONTH', 'STATUS', 'URL', 'SOURCE', 'MLS#', 'LATITUDE', 'LONGITUDE','state_county_fips_code'])
 
 def consult_redfin(addr,city,zip,sale_type,sold_date,price,sqft,lot_size,dollar_sqft,hoa,status,cursor):
     """
@@ -150,7 +144,6 @@ def process_insert(row,mySQLconnection_Property,cursor,file_name):
     global df_output,df_report
 
     try:
-        #N = is_null(row['N'])
         sale_type = is_null(row['SALE TYPE'])
         sold_date = is_null(row['SOLD DATE'])
         building_category =  is_null(row['PROPERTY TYPE']) 
@@ -170,15 +163,12 @@ def process_insert(row,mySQLconnection_Property,cursor,file_name):
         dollar_for_square_feet =  is_null(row['DOLLAR SQUARE FEET']) 
         hoa_for_month = is_null(row['HOA/MONTH'])
         status = is_null(row['STATUS'])
-        #next_open_house_start_time =  is_null(row['NEXT OPEN HOUSE START TIME'])
-        #next_open_house_end_time =  is_null(row['NEXT OPEN HOUSE END TIME'])
         url = is_null(row['URL'])
         source = is_null(row['SOURCE'])
         mls = is_null(row['MLS NUMBER']) 	
-        #favorite =	is_null(row['FAVORITE'])
-        #interested = is_null(row['INTERESTED'])
         latitude =	is_null(row['LATITUDE'])
         longitude =	is_null(row['LONGITUDE'])
+        fips_code = is_null(row["state_county_fips_code"])
         
         if zip_code != None:
             cursor = mySQLconnection_Property.cursor()
@@ -195,12 +185,12 @@ def process_insert(row,mySQLconnection_Property,cursor,file_name):
                                 (sale_type, sold_date, building_category, street_address, city, \
                                 state_code, zip_code, price, beds, baths, location, square_feet, lot_size, \
                                 year_built, days_on_market, dollar_for_square_feet, hoa_for_month, status,  url, source, mls, \
-                                latitude, longitude) \
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                                latitude, longitude, state_county_fips_code) \
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 cursor.execute (sql_insert_query, (sale_type, sold_date, building_category, street_address, city, 
                                 state_code, zip_code,  price, beds, baths, location, square_feet, lot_size, 
                                 year_built, days_on_market, dollar_for_square_feet, hoa_for_month, status, 
-                                url, source, mls,  latitude, longitude) )
+                                url, source, mls,  latitude, longitude, fips_code) )
                 
                 sql_last_record = "SELECT MAX(redfin_original_id) as redfin_original_id  FROM Redfin"
                 df = pd.read_sql(sql_last_record,mySQLconnection_Property)
@@ -212,15 +202,20 @@ def process_insert(row,mySQLconnection_Property,cursor,file_name):
                 'PROPERTY TYPE':building_category, 'ADDRESS':street_address, 'CITY': city, 'STATE OR PROVINCE':state_code,
                 'ZIP OR POSTAL CODE':zip_code, 'PRICE':price, 'BEDS':beds, 'BATHS':baths, 'LOCATION':location, 'SQUARE FEET':square_feet, 
                 'LOT SIZE':lot_size, 'YEAR BUILT':year_built, 'DAYS ON MARKET':days_on_market, '$/SQUARE FEET':dollar_for_square_feet,
-                'HOA/MONTH':hoa_for_month, 'STATUS':status, 'URL':url, 'SOURCE':source, 'MLS#':mls, 'LATITUDE':latitude, 'LONGITUDE':longitude}, ignore_index=True)
+                'HOA/MONTH':hoa_for_month, 'STATUS':status, 'URL':url, 'SOURCE':source, 'MLS#':mls, 'LATITUDE':latitude, 'LONGITUDE':longitude,
+                'state_county_fips_code':fips_code}, ignore_index=True)
         
     except Error as e :
         print ("REPORT ERROR MYSQL INSERT ORIGINAL REDFIN", e, street_address, file_name)
         df_report = df_report.append({'file_name':file_name, 'street_address': street_address, 'error':e}, ignore_index=True)
+    except Exception as err:
+        print ("REPORT ERROR INSERT ORIGINAL REDFIN", e, street_address, file_name)
+        df_report = df_report.append({'file_name':file_name, 'street_address': street_address, 'error':e}, ignore_index=True)
+
 
 def insert_redfin(df, file_name):
     print("Start insert redfin for", file_name, "size_df", len(df))
-    mySQLconnection_Property = db_connection('property_db')
+    mySQLconnection_Property = db_connection('original_db')
     cursor = mySQLconnection_Property.cursor()
     print("File: ", file_name) 
     df.progress_apply(lambda row: process_insert(row,mySQLconnection_Property,cursor,file_name),axis=1)
@@ -235,7 +230,7 @@ def delete_all_redfin():
         DE LA TABLA REDFIN EN LA BD Original
     """
     print('Start Delete Redfin from Original')
-    mySQLconnection_Property = db_connection('property_db')
+    mySQLconnection_Property = db_connection('original_db')
     cursor = mySQLconnection_Property.cursor()
     sql_insert_query = "DELETE FROM Original.Redfin"
     cursor.execute (sql_insert_query)
