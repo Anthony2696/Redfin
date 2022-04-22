@@ -295,7 +295,7 @@ def worker_retry(zip_code,filter_status_aux,filter_sold_aux,filter_timeRedfin_au
 
             if filename != '':
                 shutil.move(f"{os.getcwd()}/{dir_name_download}/{filename}",f"{os.getcwd()}/files_csv_{part_name}/results_{zip_code}_{indx}-2.csv")
-                df_zip_current = pd.read_csv(f'./files_csv_{part_name}/results_{zip_code}_{indx}.csv',dtype=str,keep_default_na=False)
+                df_zip_current = pd.read_csv(f'./files_csv_{part_name}/results_{zip_code}_{indx}-2.csv',dtype=str,keep_default_na=False)
 
                 num_match_zip = df_zip_current.shape[0]
                 try:
